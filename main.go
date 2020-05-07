@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"./greeting"
+	Mygreet "./greeting"
+	"github.com/tenntenn/greeting"
 )
 
 func main() {
-	greet := greeting.Do()
-	fmt.Println(greet)
+	greet := Mygreet.Do()
+	fmt.Println(greet, greeting.Do())
 }
