@@ -1,17 +1,28 @@
 package main
 
-import "fmt"
-
-func makeCh() chan int {
-	return make(chan int)
-}
-
-func recvCh(recv <-chan int) int {
-	return <-recv
-}
+import (
+	"fmt"
+	"sync"
+	"time"
+)
 
 func main() {
-	ch := makeCh()
-	go func(ch chan<- int) { ch <- 100 }(ch)
-	fmt.Println(recvCh(ch))
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+			defer wg.Done()
+			time.Sleep(2 * time.Second)
+			fmt.Println("done1")
+	}()
+
+	wg.Add(1)
+
+	go func () {
+		defer wg.Done()
+		time.Sleep(100 * time.Millisecond)
+		fmt.Println("done2")
+	}()
+
+	wg.Wait()
+	fmt.Println("done all")
 }
