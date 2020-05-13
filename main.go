@@ -2,27 +2,14 @@ package main
 
 import (
 	"fmt"
-	"sync"
-	"time"
+	"net/http"
 )
 
+func handler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, "hello, HTTP server")
+}
+
 func main() {
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-			defer wg.Done()
-			time.Sleep(2 * time.Second)
-			fmt.Println("done1")
-	}()
-
-	wg.Add(1)
-
-	go func () {
-		defer wg.Done()
-		time.Sleep(100 * time.Millisecond)
-		fmt.Println("done2")
-	}()
-
-	wg.Wait()
-	fmt.Println("done all")
+	http.HandleFunc("/", handler)
+	http.ListenAndServe(":8080", nil)
 }
