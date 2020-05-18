@@ -5,17 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
 )
-
-func handler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, "hello, HTTP server")
-}
 
 func main() {
 	type Person struct {
-		Name string `json: "name"`
-		Age  int    `json: "age"`
+		Name string `json:"name"`
+		Age  int    `json:"age"`
 	}
 	p := &Person{Name: "wataru", Age: 21}
 
@@ -24,5 +19,13 @@ func main() {
 	if err := enc.Encode(p); err != nil {
 		log.Fatal(err)
 	}
+
 	fmt.Println(buf.String())
+
+	var p2 Person
+	dec := json.NewDecoder(&buf)
+	if err := dec.Decode(&p2); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(p2)
 }
