@@ -1,47 +1,84 @@
 package main
 
 import (
-	"html/template"
-	"math/rand"
-	"net/http"
-	"time"
+	"bufio"
+	"errors"
+	"fmt"
+	"log"
+	"os"
+	"strconv"
+	"strings"
 )
 
-var tmpl = template.Must(template.New("msg").
-	Parse("<html><body>{{.Name}}さんの運勢は「<b>{{.Omikuji}}</b>」です</body></html>"))
-
-type Result struct {
-	Name    string
-	Omikuji string
-}
-
-func handler(w http.ResponseWriter, r *http.Request) {
-	result := Result{
-		Name:    r.FormValue("p"),
-		Omikuji: omikuji(),
-	}
-	tmpl.Execute(w, result)
+type item struct {
+	Category string
+	Price    int
 }
 
 func main() {
-	// 現在時刻
-	t := time.Now().UnixNano()
-	rand.Seed(t)
-
-	http.HandleFunc("/", handler)
-	http.ListenAndServe(":8080", nil)
+	file, err := os.Create("accountbook.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	var n int
+	fmt.Println("何件入力しますか")
+	fmt.Scan(&n)
+	for i := 0; i < n; i++ {
+		if err := inputItem(file); err != nil {
+			log.Fatal(err)
+		}
+	}
+	if err := file.Close(); err != nil {
+		log.Fatal(err)
+	}
+	if err := showItems(); err != nil {
+		log.Fatal(err)
+	}
 }
 
-func omikuji() string {
-	n := rand.Intn(6) // 0-5
-	switch n + 1 {
-	case 6:
-		return "大吉"
-	case 5, 4:
-		return "中吉"
-	case 3, 2:
-		return "小吉"
-	default:
-		return "凶"
+func inputItem(file *os.File) error {
+	var item item
+	fmt.Print("品目")
+	fmt.Scan(&item.Category)
+
+	fmt.Print("値段")
+	fmt.Scan(&item.Price)
+
+	line := fmt.Sprintf("%s %d\n", item.Category, item.Price)
+	if _, err := file.WriteString(line); err != nil {
+		return err
 	}
+	return nil
+}
+
+func showItems() error {
+	file, err := os.Open("accountbook.txt")
+	if err != nil {
+		return err
+	}
+	fmt.Println("=======")
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		splited := strings.Split(line, " ")
+		if len(splited) != 2 {
+			return errors.New("パースに失敗しました")
+		}
+		category := splited[0]
+
+		price, err := strconv.Atoi(splited[1])
+		if err != nil {
+			return err
+		}
+		fmt.Printf("%s:%d円\n", category, price)
+	}
+
+	if err := scanner.Err(); err != nil {
+		return err
+	}
+
+	fmt.Println("=======")
+	return nil
 }
