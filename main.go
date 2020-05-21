@@ -1,84 +1,34 @@
 package main
 
 import (
-	"bufio"
-	"errors"
+	"encoding/json"
 	"fmt"
-	"log"
-	"os"
-	"strconv"
-	"strings"
+	"net/http"
 )
 
-type item struct {
-	Category string
-	Price    int
+type User struct {
+	Firstname string `json:"firstname"`
+	Lastname  string `json:"lastname"`
+	Age       int    `json:"age"`
 }
 
 func main() {
-	file, err := os.Create("accountbook.txt")
-	if err != nil {
-		log.Fatal(err)
-	}
-	var n int
-	fmt.Println("何件入力しますか")
-	fmt.Scan(&n)
-	for i := 0; i < n; i++ {
-		if err := inputItem(file); err != nil {
-			log.Fatal(err)
+	http.HandleFunc("/decode", func(w http.ResponseWriter, r *http.Request) {
+		var user User
+		json.NewDecoder(r.Body).Decode(&user)
+
+		fmt.Fprintf(w, "%s %s is %d years old!", user.Firstname, user.Lastname, user.Age)
+	})
+
+	http.HandleFunc("/encode", func(w http.ResponseWriter, r *http.Request) {
+		peter := User{
+			Firstname: "John",
+			Lastname:  "Doe",
+			Age:       25,
 		}
-	}
-	if err := file.Close(); err != nil {
-		log.Fatal(err)
-	}
-	if err := showItems(); err != nil {
-		log.Fatal(err)
-	}
-}
 
-func inputItem(file *os.File) error {
-	var item item
-	fmt.Print("品目")
-	fmt.Scan(&item.Category)
+		json.NewEncoder(w).Encode(peter)
+	})
 
-	fmt.Print("値段")
-	fmt.Scan(&item.Price)
-
-	line := fmt.Sprintf("%s %d\n", item.Category, item.Price)
-	if _, err := file.WriteString(line); err != nil {
-		return err
-	}
-	return nil
-}
-
-func showItems() error {
-	file, err := os.Open("accountbook.txt")
-	if err != nil {
-		return err
-	}
-	fmt.Println("=======")
-	scanner := bufio.NewScanner(file)
-
-	for scanner.Scan() {
-		line := scanner.Text()
-
-		splited := strings.Split(line, " ")
-		if len(splited) != 2 {
-			return errors.New("パースに失敗しました")
-		}
-		category := splited[0]
-
-		price, err := strconv.Atoi(splited[1])
-		if err != nil {
-			return err
-		}
-		fmt.Printf("%s:%d円\n", category, price)
-	}
-
-	if err := scanner.Err(); err != nil {
-		return err
-	}
-
-	fmt.Println("=======")
-	return nil
+	http.ListenAndServe(":8080", nil)
 }
